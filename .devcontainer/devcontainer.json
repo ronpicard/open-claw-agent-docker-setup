@@ -1,0 +1,24 @@
+{
+  "name": "OpenClaw (Ubuntu)",
+  "build": {
+    "context": "..",
+    "dockerfile": "../Dockerfile"
+  },
+  "remoteUser": "ubuntu",
+  "workspaceFolder": "/workspace",
+  "forwardPorts": [18789],
+  "portsAttributes": {
+    "18789": {
+      "label": "OpenClaw gateway"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash"
+      },
+      "extensions": ["dbaeumer.vscode-eslint", "esbenp.prettier-vscode"]
+    }
+  },
+  "postCreateCommand": "node --version && npm --version && (command -v pnpm >/dev/null && pnpm --version || true) && printf '\\n%s\\n%s\\n\\n' 'OpenClaw gateway: no systemd in this dev container — start with: openclaw gateway run' 'Control UI URL (clipboard often unavailable here): node scripts/print-openclaw-dashboard-url.js'"
+}

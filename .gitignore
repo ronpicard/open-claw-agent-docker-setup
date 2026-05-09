@@ -1,0 +1,10 @@
+.DS_Store
+node_modules/
+
+# Personal editor/IDE state — not part of the project
+.vscode/
+.cursor/
+
+# Local OpenClaw runtime state (should never be committed)
+.openclaw/
+openclaw.json
