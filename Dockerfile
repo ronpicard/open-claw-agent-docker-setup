@@ -65,8 +65,10 @@ ENV PATH="/home/ubuntu/.local/bin:${PATH}"
 RUN npm install -g --no-fund --no-audit openclaw@latest </dev/null
 
 # Claude Code CLI — https://docs.anthropic.com/en/docs/claude-code/setup (native installer; binary -> ~/.local/bin/claude)
-# Redirect stdin from /dev/null so the installer can never block on `read` from a tty.
-RUN curl -fsSL https://claude.ai/install.sh | bash </dev/null
+# Do not use `curl ... | bash </dev/null`: the redirect attaches to the piped `bash`, so its stdin is
+# /dev/null instead of the curl pipe (curl then fails with "Failure writing output to destination" and
+# nothing installs). Run the pipeline under `bash -c` so only the outer shell has stdin closed.
+RUN bash -c 'curl -fsSL https://claude.ai/install.sh | bash' </dev/null
 
 # Fail the image build if either CLI did not land on PATH
 RUN command -v openclaw >/dev/null && command -v claude >/dev/null \
