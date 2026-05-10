@@ -12,6 +12,10 @@
       "label": "OpenClaw gateway"
     }
   },
+  "mounts": [
+    "source=openclaw-state,target=/home/ubuntu/.openclaw,type=volume",
+    "source=claude-state,target=/home/ubuntu/.claude,type=volume"
+  ],
   "customizations": {
     "vscode": {
       "settings": {

@@ -18,7 +18,7 @@ This repo bakes in the workarounds for both.
 | File | Purpose |
 | --- | --- |
 | `Dockerfile` | Ubuntu 24.04 + Node.js 22 (LTS) + `openclaw` + `claude`, running as the stock `ubuntu` user (UID 1000) with passwordless `sudo`. |
-| `.devcontainer/devcontainer.json` | VS Code / Cursor Dev Container config. Builds the image, forwards port `18789` (OpenClaw gateway), and prints first-run hints. |
+| `.devcontainer/devcontainer.json` | VS Code / Cursor Dev Container config. Builds the image, forwards port `18789` (OpenClaw gateway), mounts persistent volumes for OpenClaw and Claude state, and prints first-run hints. |
 | `scripts/print-openclaw-dashboard-url.js` | Reads `~/.openclaw/openclaw.json` and prints `http://127.0.0.1:<port>/#token=<token>` so you can open the Control UI when `openclaw dashboard` can't reach a clipboard. |
 | `.dockerignore` | Keeps `.git`, `.devcontainer`, `node_modules`, etc. out of the build context. |
 
@@ -51,6 +51,37 @@ NodeSource.
 
    Open the printed URL in your browser. Port `18789` is auto-forwarded.
 
+## Persistent state
+
+The Dev Container automatically attaches two named Docker volumes so your
+config survives "Rebuild Container":
+
+| Volume | Mounted at | Holds |
+| --- | --- | --- |
+| `openclaw-state` | `/home/ubuntu/.openclaw` | Gateway auth token, provider/API key config, session state. |
+| `claude-state` | `/home/ubuntu/.claude` | Claude Code login, `settings.json`, MCP config, conversation history. |
+
+Docker creates these on first launch — no manual setup required. You can also
+pre-create them or inspect them anytime:
+
+```bash
+docker volume create openclaw-state
+docker volume create claude-state
+docker volume ls | grep -E "openclaw-state|claude-state"
+docker volume inspect openclaw-state
+```
+
+Back up a volume to a tarball:
+
+```bash
+docker run --rm -v openclaw-state:/data -v "$PWD":/backup ubuntu \
+  tar czf /backup/openclaw-state.tgz -C /data .
+```
+
+If you only authenticate Claude via `ANTHROPIC_API_KEY` (env var) and never
+run `claude login`, the `claude-state` volume is harmless but unused — you can
+remove it from `.devcontainer/devcontainer.json` if you prefer.
+
 ## Quickstart — plain Docker
 
 ```bash
@@ -58,8 +89,10 @@ docker build -t openclaw-dev .
 
 docker run --rm -it \
   -p 18789:18789 \
+  -e ANTHROPIC_API_KEY \
   -v "$PWD":/workspace \
   -v openclaw-state:/home/ubuntu/.openclaw \
+  -v claude-state:/home/ubuntu/.claude \
   openclaw-dev bash
 ```
 
@@ -71,9 +104,6 @@ openclaw gateway run
 # in another `docker exec` session:
 node /workspace/scripts/print-openclaw-dashboard-url.js
 ```
-
-The named `openclaw-state` volume keeps your OpenClaw config and auth token
-across container restarts.
 
 ## Why these workarounds?
 
